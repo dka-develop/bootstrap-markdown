@@ -534,19 +534,26 @@
       // parse with supported markdown parser
       val = val || this.$textarea.val();
 
-      if (this.$options.parser) {
-        content = this.$options.parser(val);
-      } else if (typeof markdown == 'object') {
-        content = markdown.toHTML(val);
-      } else if (typeof marked == 'function') {
-        content = marked(val);
-      } else {
-        content = val;
-      }
+      content = val;
+
+      // if (this.$options.parser) {
+      //   content = this.$options.parser(val);
+      // } else if (typeof markdown == 'object') {
+      //   content = markdown.toHTML(val);
+      // } else if (typeof marked == 'function') {
+      //   content = marked(val);
+      // } else {
+      //   content = val;
+      // }
 
       return content;
     },
     showPreview: function() {
+
+      // $('#desc').keyup(function(){
+      //             $('#live-preview').html($(this).val());
+      //         });
+
       var options = this.$options,
         container = this.$textarea,
         afterContainer = container.next(),
@@ -599,6 +606,7 @@
       container.hide();
 
       // Attach the editor instances
+
       replacementContainer.data('markdown', this);
 
       if (this.$element.is(':disabled') || this.$element.is('[readonly]')) {
@@ -607,6 +615,10 @@
       }
 
       return this;
+
+
+
+
     },
     hidePreview: function() {
       // Give flag that tells the editor to quit preview mode
@@ -1060,14 +1072,14 @@
             }
 
             // transform selection and set the cursor into chunked text
-            if (content.substr(selected.start - 2, 2) === '**' &&
-              content.substr(selected.end, 2) === '**') {
-              e.setSelection(selected.start - 2, selected.end + 2);
+            if (content.substr(selected.start - 3, 3) === '<b>' &&
+              content.substr(selected.end, 4) === '</b>') {
+              e.setSelection(selected.start - 3, selected.end + 4);
               e.replaceSelection(chunk);
-              cursor = selected.start - 2;
+              cursor = selected.start - 3;
             } else {
-              e.replaceSelection('**' + chunk + '**');
-              cursor = selected.start + 2;
+              e.replaceSelection('<b>' + chunk + '</b>');
+              cursor = selected.start + 3;
             }
 
             // Set the cursor
@@ -1097,56 +1109,14 @@
             }
 
             // transform selection and set the cursor into chunked text
-            if (content.substr(selected.start - 1, 1) === '_' &&
-              content.substr(selected.end, 1) === '_') {
-              e.setSelection(selected.start - 1, selected.end + 1);
+            if (content.substr(selected.start - 3, 3) === '<i>' &&
+              content.substr(selected.end, 4) === '</i>') {
+              e.setSelection(selected.start - 3, selected.end + 4);
               e.replaceSelection(chunk);
-              cursor = selected.start - 1;
+              cursor = selected.start - 3;
             } else {
-              e.replaceSelection('_' + chunk + '_');
-              cursor = selected.start + 1;
-            }
-
-            // Set the cursor
-            e.setSelection(cursor, cursor + chunk.length);
-          }
-        }, {
-          name: 'cmdHeading',
-          title: 'Heading',
-          hotkey: 'Ctrl+H',
-          icon: {
-            glyph: 'glyphicon glyphicon-header',
-            fa: 'fa fa-header',
-            'fa-3': 'icon-font',
-            'fa-5': 'fas fa-heading',
-            octicons: 'octicon octicon-text-size'
-          },
-          callback: function(e) {
-            // Append/remove ### surround the selection
-            var chunk, cursor, selected = e.getSelection(),
-              content = e.getContent(),
-              pointer, prevChar;
-
-            if (selected.length === 0) {
-              // Give extra word
-              chunk = e.__localize('heading text');
-            } else {
-              chunk = selected.text + '\n';
-            }
-
-            // transform selection and set the cursor into chunked text
-            if ((pointer = 4, content.substr(selected.start - pointer, pointer) === '### ') ||
-              (pointer = 3, content.substr(selected.start - pointer, pointer) === '###')) {
-              e.setSelection(selected.start - pointer, selected.end);
-              e.replaceSelection(chunk);
-              cursor = selected.start - pointer;
-            } else if (selected.start > 0 && (prevChar = content.substr(selected.start - 1, 1), !!prevChar && prevChar != '\n')) {
-              e.replaceSelection('\n\n### ' + chunk);
-              cursor = selected.start + 6;
-            } else {
-              // Empty string before element
-              e.replaceSelection('### ' + chunk);
-              cursor = selected.start + 4;
+              e.replaceSelection('<i>' + chunk + '</i>');
+              cursor = selected.start + 3;
             }
 
             // Set the cursor
@@ -1186,7 +1156,46 @@
               var sanitizedLink = $('<div>' + link + '</div>').text();
 
               // transform selection and set the cursor into chunked text
-              e.replaceSelection('[' + chunk + '](' + sanitizedLink + ')');
+              e.replaceSelection('<a href="' + sanitizedLink + '">' + chunk + '</a>');
+              cursor = selected.start + 1;
+
+              // Set the cursor
+              e.setSelection(cursor, cursor + chunk.length);
+            }
+          }
+        },
+        {
+          name: 'cmdUrlTg',
+          title: 'inline mention of a user',
+          hotkey: 'Ctrl+T',
+          icon: {
+            glyph: 'glyphicon glyphicon-link',
+            fa: 'fa fa-link',
+            'fa-3': 'icon-link',
+            'fa-5': 'fab fa-telegram',
+            octicons: 'octicon octicon-link'
+          },
+          callback: function(e) {
+            // Give [] surround the selection and prepend the link
+            var chunk, cursor, selected = e.getSelection(),
+              content = e.getContent(),
+              link;
+
+            if (selected.length === 0) {
+              // Give extra word
+              chunk = e.__localize('input user id');
+            } else {
+              chunk = selected.text;
+            }
+
+            link = prompt(e.__localize('Insert user id'), '');
+
+            var urlRegex = new RegExp('^[0-9]{9,}', 'i');
+            if (link !== null && link !== '' && urlRegex.test(link)) {
+              var sanitizedLink = $('<div>' + link + '</div>').text();
+
+              // transform selection and set the cursor into chunked text
+              e.replaceSelection('<a href=tg://user?id="' + sanitizedLink + '">' + chunk + '</a>');
               cursor = selected.start + 1;
 
               // Set the cursor
@@ -1238,112 +1247,6 @@
       }, {
         name: 'groupMisc',
         data: [{
-          name: 'cmdList',
-          hotkey: 'Ctrl+U',
-          title: 'Unordered List',
-          icon: {
-            glyph: 'glyphicon glyphicon-list',
-            fa: 'fa fa-list',
-            'fa-3': 'icon-list-ul',
-            'fa-5': 'fas fa-list-ul',
-            octicons: 'octicon octicon-list-unordered'
-          },
-          callback: function(e) {
-            // Prepend/Give - surround the selection
-            var chunk, cursor, selected = e.getSelection(),
-              content = e.getContent();
-
-            // transform selection and set the cursor into chunked text
-            if (selected.length === 0) {
-              // Give extra word
-              chunk = e.__localize('list text here');
-
-              e.replaceSelection('- ' + chunk);
-              // Set the cursor
-              cursor = selected.start + 2;
-            } else {
-              if (selected.text.indexOf('\n') < 0) {
-                chunk = selected.text;
-
-                e.replaceSelection('- ' + chunk);
-
-                // Set the cursor
-                cursor = selected.start + 2;
-              } else {
-                var list = [];
-
-                list = selected.text.split('\n');
-                chunk = list[0];
-
-                $.each(list, function(k, v) {
-                  list[k] = '- ' + v;
-                });
-
-                e.replaceSelection('\n\n' + list.join('\n'));
-
-                // Set the cursor
-                cursor = selected.start + 4;
-              }
-            }
-
-            // Set the cursor
-            e.setSelection(cursor, cursor + chunk.length);
-          }
-        }, {
-          name: 'cmdListO',
-          hotkey: 'Ctrl+O',
-          title: 'Ordered List',
-          icon: {
-            glyph: 'glyphicon glyphicon-th-list',
-            fa: 'fa fa-list-ol',
-            'fa-3': 'icon-list-ol',
-            'fa-5': 'fas fa-list-ol',
-            octicons: 'octicon octicon-list-ordered'
-          },
-          callback: function(e) {
-
-            // Prepend/Give - surround the selection
-            var chunk, cursor, selected = e.getSelection(),
-              content = e.getContent();
-
-            // transform selection and set the cursor into chunked text
-            if (selected.length === 0) {
-              // Give extra word
-              chunk = e.__localize('list text here');
-              e.replaceSelection('1. ' + chunk);
-              // Set the cursor
-              cursor = selected.start + 3;
-            } else {
-              if (selected.text.indexOf('\n') < 0) {
-                chunk = selected.text;
-
-                e.replaceSelection('1. ' + chunk);
-
-                // Set the cursor
-                cursor = selected.start + 3;
-              } else {
-                var i = 1;
-                var list = [];
-
-                list = selected.text.split('\n');
-                chunk = list[0];
-
-                $.each(list, function(k, v) {
-                  list[k] = i + '. ' + v;
-                  i++;
-                });
-
-                e.replaceSelection('\n\n' + list.join('\n'));
-
-                // Set the cursor
-                cursor = selected.start + 5;
-              }
-            }
-
-            // Set the cursor
-            e.setSelection(cursor, cursor + chunk.length);
-          }
-        }, {
           name: 'cmdCode',
           hotkey: 'Ctrl+K',
           title: 'Code',
@@ -1361,28 +1264,20 @@
 
             if (selected.length === 0) {
               // Give extra word
-              chunk = e.__localize('code text here');
+              chunk = e.__localize('emphasized text');
             } else {
               chunk = selected.text;
             }
 
             // transform selection and set the cursor into chunked text
-            if (content.substr(selected.start - 4, 4) === '```\n' &&
-              content.substr(selected.end, 4) === '\n```') {
-              e.setSelection(selected.start - 4, selected.end + 4);
+            if (content.substr(selected.start - 6, 6) === '<code>' &&
+              content.substr(selected.end, 7) === '</code>') {
+              e.setSelection(selected.start - 6, selected.end + 7);
               e.replaceSelection(chunk);
-              cursor = selected.start - 4;
-            } else if (content.substr(selected.start - 1, 1) === '`' &&
-              content.substr(selected.end, 1) === '`') {
-              e.setSelection(selected.start - 1, selected.end + 1);
-              e.replaceSelection(chunk);
-              cursor = selected.start - 1;
-            } else if (content.indexOf('\n') > -1) {
-              e.replaceSelection('```\n' + chunk + '\n```');
-              cursor = selected.start + 4;
+              cursor = selected.start - 6;
             } else {
-              e.replaceSelection('`' + chunk + '`');
-              cursor = selected.start + 1;
+              e.replaceSelection('<code>' + chunk + '</code>');
+              cursor = selected.start + 6;
             }
 
             // Set the cursor
@@ -1396,7 +1291,7 @@
             glyph: 'glyphicon glyphicon-comment',
             fa: 'fa fa-quote-left',
             'fa-3': 'icon-quote-left',
-            'fa-5': 'fas fa-quote-left',
+            'fa-5': 'fas fa-terminal',
             octicons: 'octicon octicon-quote'
           },
           callback: function(e) {
@@ -1404,38 +1299,22 @@
             var chunk, cursor, selected = e.getSelection(),
               content = e.getContent();
 
-            // transform selection and set the cursor into chunked text
             if (selected.length === 0) {
               // Give extra word
-              chunk = e.__localize('quote here');
-
-              e.replaceSelection('> ' + chunk);
-
-              // Set the cursor
-              cursor = selected.start + 2;
+              chunk = e.__localize('pre text');
             } else {
-              if (selected.text.indexOf('\n') < 0) {
-                chunk = selected.text;
+              chunk = selected.text;
+            }
 
-                e.replaceSelection('> ' + chunk);
-
-                // Set the cursor
-                cursor = selected.start + 2;
-              } else {
-                var list = [];
-
-                list = selected.text.split('\n');
-                chunk = list[0];
-
-                $.each(list, function(k, v) {
-                  list[k] = '> ' + v;
-                });
-
-                e.replaceSelection('\n\n' + list.join('\n'));
-
-                // Set the cursor
-                cursor = selected.start + 4;
-              }
+            // transform selection and set the cursor into chunked text
+            if (content.substr(selected.start - 5, 5) === '<pre>' &&
+              content.substr(selected.end, 6) === '</pre>') {
+              e.setSelection(selected.start - 5, selected.end + 6);
+              e.replaceSelection(chunk);
+              cursor = selected.start - 5;
+            } else {
+              e.replaceSelection('<pre>' + chunk + '</pre>');
+              cursor = selected.start + 5;
             }
 
             // Set the cursor
